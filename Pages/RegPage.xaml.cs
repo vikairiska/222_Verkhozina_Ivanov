@@ -1,0 +1,150 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Security.Cryptography;
+
+namespace _222_Verkhozina_Ivanov.Pages
+{
+    /// <summary>
+    /// Логика взаимодействия для RegPage.xaml
+    /// </summary>
+    public partial class RegPage : Page
+    {
+        public RegPage()
+        {
+            InitializeComponent();
+            comboBxRole.SelectedIndex = 0;
+        }
+
+        private void lblLogHitn_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            txtbxLog.Focus();
+        }
+
+        private void lblPassHitn_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            passBxFrst.Focus();
+        }
+
+        private void lblPassSecHitn_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            passBxScnd.Focus();
+        }
+
+        private void lblFioHitn_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            txtbxFIO.Focus();
+        }
+
+        private void txtbxLog_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            
+        }
+
+        private void txtbxFIO_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
+
+        private void passBxFrst_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void passBxScnd_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void regButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtbxLog.Text) || string.IsNullOrEmpty(txtbxFIO.Text) || string.IsNullOrEmpty(passBxFrst.Password) || string.IsNullOrEmpty(passBxScnd.Password))
+            {
+                MessageBox.Show("Заполните все поля!");
+                return;
+            }
+            var db = new VerkhozinaIvanov_DB_PaymentEntities();
+            {
+                var user = db.User
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Login == txtbxLog.Text);
+                if (user != null)
+                {
+                    MessageBox.Show("Пользователь с таким логином уже существует!"); return;
+                }
+            }
+
+            if (passBxFrst.Password.Length < 6)
+            {
+                MessageBox.Show("Пароль слишком короткий, должно быть минимум 6  символов!");
+                return;
+            }
+            
+            bool en = true;
+            bool number = false;
+            for (int i = 0; i < passBxFrst.Password.Length; i++)
+            {
+                if (passBxFrst.Password[i] >= '0' && passBxFrst.Password[i] <= '9') number = true;
+                else if (!((passBxFrst.Password[i] >= 'A' && passBxFrst.Password[i] <= 'Z') || (passBxFrst.Password[i] >= 'a' && passBxFrst.Password[i] <= 'z'))) en = false;
+            }
+
+            if (!en)
+            {
+                MessageBox.Show("Используйте только английскую расскладку!");
+                return;
+            }
+                    
+            if (!number)
+            {
+                MessageBox.Show("Добавьте хотябы одну цифру!");
+                return;
+            }
+                    
+            if (en && number)
+            {
+                if (passBxFrst.Password != passBxScnd.Password)
+                {
+                    MessageBox.Show("Пароли не совпадают!");
+                    return;
+                }
+            }
+            User userObject = new User
+            {
+                FIO = txtbxFIO.Text,
+                Login = txtbxLog.Text,
+                Password = GetHash(passBxFrst.Password),
+                Role = comboBxRole.Text
+            };
+            db.User.Add(userObject);
+            db.SaveChanges();
+            MessageBox.Show("Пользователь успешно зарегистрирован!"); txtbxLog.Clear();
+            passBxFrst.Clear();
+            passBxScnd.Clear();
+            comboBxRole.SelectedIndex = 1;
+            txtbxFIO.Clear();
+            NavigationService?.Navigate(new AuthPage());
+        }
+
+        public static string GetHash(String password)
+        {
+            using (var hash = SHA1.Create())
+            {
+                return
+               string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(password)).Select(x => x.ToString("X2")));
+            }
+        }
+
+    }
+}
